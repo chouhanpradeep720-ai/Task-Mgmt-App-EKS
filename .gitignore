@@ -1,0 +1,23 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+
+# Node
+**/node_modules/
+
+# Environment variables
+.env
+.env.*
+
+# Build files
+**/dist/
+**/build/
+
+# Logs
+*.log
+
+# OS
+.DS_Store

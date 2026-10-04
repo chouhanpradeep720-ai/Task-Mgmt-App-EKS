@@ -1,0 +1,28 @@
+backend:
+  replicas: 0
+chunksCache:
+  enabled: false
+deploymentMode: SingleBinary
+gateway:
+  replicas: 0
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    bucketNames:
+      admin: admin
+      chunks: chunks
+      ruler: ruler
+    type: filesystem
+  useTestSchema: true
+read:
+  replicas: 0
+resultsCache:
+  enabled: false
+singleBinary:
+  persistence:
+    storageClass: gp2
+  replicas: 1
+write:
+  replicas: 0

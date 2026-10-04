@@ -1,0 +1,168 @@
+# KUBE-PROMETHEUS-STACK
+
+# GRAFANA
+grafana:
+  enabled: true
+
+  # Persistent Storage
+  persistence:
+    enabled: true
+    storageClassName: gp2
+    accessModes:
+      - ReadWriteOnce
+    size: 1Gi
+
+  # Admin Credentials
+  admin:
+    existingSecret: grafana-admin-secret
+    userKey: admin-user
+    passwordKey: admin-password
+
+  # Grafana URL
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
+      serve_from_sub_path: true
+
+  # Service
+  service:
+    type: ClusterIP
+    port: 80
+
+  # Grafana ServiceMonitor
+  serviceMonitor:
+    enabled: true
+    path: /metrics
+
+# PROMETHEUS
+prometheus:
+  enabled: true
+
+  prometheusSpec:
+
+    # Prometheus URL
+    routePrefix: /prometheus
+    externalUrl: /prometheus
+
+    # Data Retention
+    retention: 3d
+
+    # Resources
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+    # ServiceMonitor Selection
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+
+    # PodMonitor Selection
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorNamespaceSelector: {}
+
+
+# ALERTMANAGER
+
+alertmanager:
+  enabled: true
+
+  alertmanagerSpec:
+
+    # Resources
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 256Mi
+
+  # Alertmanager Configuration
+  config:
+
+    global: {}
+
+    route:
+      receiver: discord-relay
+
+      group_by:
+        - alertname
+        - namespace
+
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+
+      routes:
+
+        # Ignore Watchdog
+        - receiver: null
+          matchers:
+            - alertname = "Watchdog"
+
+        # Ignore InfoInhibitor
+        - receiver: null
+          matchers:
+            - alertname = "InfoInhibitor"
+
+    receivers:
+
+      # Null Receiver
+      - name: null
+
+      # Discord Relay
+      - name: discord-relay
+
+        webhook_configs:
+          - url: "http://alertmanager-discord.monitoring.svc.cluster.local:9094"
+            send_resolved: true
+
+
+# KUBE STATE METRICS
+
+kubeStateMetrics:
+  enabled: true
+
+
+# NODE EXPORTER
+
+nodeExporter:
+  enabled: true
+
+
+# PROMETHEUS OPERATOR
+
+prometheusOperator:
+
+  livenessProbe:
+    initialDelaySeconds: 30
+
+  readinessProbe:
+    initialDelaySeconds: 30
+
+
+# EKS CONTROL PLANE COMPONENTS
+
+# EKS control plane is AWS managed.
+# These components are not directly exposed like self-managed
+# Kubernetes control plane components.
+
+kubeScheduler:
+  enabled: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+
+# KUBE-PROXY MONITORING
+
+kubeProxy:
+  enabled: false
+
