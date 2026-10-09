@@ -33,3 +33,14 @@ resource "aws_iam_role_policy_attachment" "karpenter_node_policy_ssm" {
   role       = aws_iam_role.karpenter_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
+
+# This resource creates an EKS access entry for the Karpenter node role, 
+# allowing it to be used by EC2 instances in the EKS cluster.
+
+resource "aws_eks_access_entry" "karpenter_node" {
+  cluster_name = var.eks_cluster_name
+
+  principal_arn = aws_iam_role.karpenter_node_role.arn
+
+  type = "EC2_LINUX"
+}

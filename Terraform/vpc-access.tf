@@ -17,8 +17,18 @@ module "access_vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
+  public_subnet_tags = {
+    Name        = "task-management-access-public-subnet"
+    Environment = var.environment
+
+  }
+  private_subnet_tags = {
+    Name        = "task-management-access-private-subnet"
+    Environment = var.environment
+  }
+
   tags = {
-    Name = "task-managemebt-access-vpc"
+    Name = "task-management-access-vpc"
   }
 
 }
