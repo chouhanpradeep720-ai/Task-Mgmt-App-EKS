@@ -11,9 +11,9 @@ on:
       - main
     paths:
       - 'backend/**'
-  env:
+env:
     APP_NAME: task-app-backend
-  jobs:
+jobs:
     backend-cd:
       runs-on: ubuntu-latest
       steps:

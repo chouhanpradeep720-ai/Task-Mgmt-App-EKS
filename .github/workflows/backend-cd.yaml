@@ -6,16 +6,16 @@ on:
       - completed
     branches:
       - main
-  permissions:
+permissions:
     contents: read
     id-token: write
-  concurrency:
+concurrency:
     group: backend-deployment
     cancel-in-progress: false  
   
-  env:
+env:
     APP_NAME: task-app-backend
-  jobs:
+jobs:
     backend-deployment:
       name: Deploy Backend to EKS
       runs-on: ubuntu-latest

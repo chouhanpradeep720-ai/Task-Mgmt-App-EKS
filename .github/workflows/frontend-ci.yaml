@@ -11,9 +11,9 @@ on:
       - main
     paths:
       - 'frontend/**'
-  env:
+env:
     APP_NAME: task-app-frontend
-  jobs:
+jobs:
     frontend-ci:
       name: Frontend Build, Scan & Push
       runs-on: ubuntu-latest
