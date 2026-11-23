@@ -1,0 +1,72 @@
+name: Frontend CI
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'      
+      - '.github/workflows/frontend-ci.yaml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+  env:
+    APP_NAME: task-app-frontend
+  jobs:
+    frontend-ci:
+      name: Frontend Build, Scan & Push
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v6
+
+        - name: GitLeaks Secret Scan
+          uses: gitleaks/gitleaks-action@v2
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        - name: Set up Node.js
+          uses: actions/setup-node@v3 
+
+        - name: Install dependencies
+          run: npm install
+          working-directory: ./frontend
+
+        - name: Run Linting
+          run: npm run lint
+          working-directory: ./frontend 
+
+        - name: Generate Image Tag
+          id: vars
+          run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+        - name: Docker Hub Login
+          if: github.event_name == 'push'
+          uses: docker/login-action@v2
+          with:
+            username: ${{ secrets.DOCKER_USERNAME }}
+            password: ${{ secrets.DOCKER_PASSWORD }}  
+
+        - name: Build Docker Image 
+          if: github.event_name == 'push' 
+          uses: docker/build-push-action@v5
+          with:
+            context: ./frontend
+            file: ./frontend/Dockerfile
+            push: false
+            tags: ${{ secrets.DOCKER_USERNAME }}/${APP_NAME}:frontend-${{ steps.vars.outputs.sha_short }}
+
+        - name: Scan Docker Image for Vulnerabilities
+          if: github.event_name == 'push'
+          uses: aquasecurity/trivy-action@v1
+          with:
+            image-ref: ${{ secrets.DOCKER_USERNAME }}/${APP_NAME}:${{ steps.vars.outputs.sha_short }}
+            format: 'table'
+            exit-code: '1'
+            severity: 'CRITICAL,HIGH'
+
+        - name: Push Docker Image to Docker Hub
+          if: github.event_name == 'push'
+          run: |
+            docker push ${{ secrets.DOCKER_USERNAME }}/${APP_NAME}:frontend-${{ steps.vars.outputs.sha_short }}

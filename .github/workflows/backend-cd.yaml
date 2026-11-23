@@ -1,0 +1,65 @@
+name: Backend CD
+on:
+  workflow_run:
+    workflows: ["Backend CI"]
+    types:
+      - completed
+    branches:
+      - main
+  permissions:
+    contents: read
+    id-token: write
+  concurrency:
+    group: backend-deployment
+    cancel-in-progress: false  
+  
+  env:
+    APP_NAME: task-app-backend
+  jobs:
+    backend-deployment:
+      name: Deploy Backend to EKS
+      runs-on: ubuntu-latest
+      if: github.event.workflow_run.conclusion == 'success'
+      steps:
+        - name: Git Commit Check
+          uses: actions/checkout@v6   
+          with:
+            ref: ${{ github.event.workflow_run.head_sha }}
+
+        - name: Commit Tag Generation
+          id: vars
+          run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v3
+          with:
+            role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+            aws-region: ${{ vars.AWS_REGION }}
+            role-session-name: GitHubActionsBackendDeployment            
+        
+        - name: Configure kubectl
+          uses: aws-actions/eks-kubectl@v3
+          with:
+            cluster-name: ${{ vars.AWS_EKS_CLUSTER_NAME }}
+            region: ${{ vars.AWS_REGION }}
+
+        - name: Update Frontend Deployment    
+          run: |
+            kubectl set image deployment/backend-deployment \
+            backend-container=${{ secrets.DOCKER_USERNAME }}/${APP_NAME}:${{ steps.vars.outputs.sha_short }} \
+            -n ${{ vars.AWS_EKS_NAMESPACE }}
+
+        - name: Verify Deployment
+          run: |
+            kubectl rollout status deployment/backend-deployment -n \
+             ${{ vars.AWS_EKS_NAMESPACE }} \
+            --timeout=120s 
+
+        - name: Verify Backend Service
+          run: |
+            kubectl get services -n task-management
+
+        - name: Verify Backend Pods
+          run: |
+            kubectl get pods -n task-management          
+              
