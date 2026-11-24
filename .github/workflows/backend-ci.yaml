@@ -5,7 +5,7 @@ on:
       - main
     paths:
       - 'backend/**'      
-      - '.github/workflows/backend-cd.yaml'
+      - '.github/workflows/backend-ci.yaml'
   pull_request:
     branches:
       - main
